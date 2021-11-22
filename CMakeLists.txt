@@ -55,30 +55,16 @@ include( ROCMCreatePackage )
 include( ROCMInstallTargets )
 include( ROCMPackageConfigHelpers )
 include( ROCMInstallSymlinks )
-include( ROCMCheckTargetIds OPTIONAL )
+include( ROCMCheckTargetIds )
+include( ROCMClients )
+include( ROCMUtilities )
 
 #Set the AMDGPU_TARGETS with backward compatiblity
 set(AMDGPU_TARGETS "all" CACHE STRING "Compile for which gpu architectures?")
-if(COMMAND rocm_check_target_ids)
-  rocm_check_target_ids(DEFAULT_AMDGPU_TARGETS
-    TARGETS "gfx803;gfx900:xnack-;gfx906:xnack-;gfx908:xnack-;gfx90a:xnack-;gfx90a:xnack+;gfx1030"
-  )
-else()
-  # Detect compiler support for target ID
-  # This section is deprecated. Please use rocm_check_target_ids for future use.
-  if( CMAKE_CXX_COMPILER MATCHES ".*/hipcc$" )
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} "--help"
-      OUTPUT_VARIABLE CXX_OUTPUT
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      ERROR_STRIP_TRAILING_WHITESPACE)
-    string(REGEX MATCH ".mcode\-object\-version" TARGET_ID_SUPPORT ${CXX_OUTPUT})
-  endif()
-  if(TARGET_ID_SUPPORT)
-    set(DEFAULT_AMDGPU_TARGETS "gfx803;gfx900:xnack-;gfx906:xnack-;gfx908:xnack-;gfx1030")
-  else()
-    set(DEFAULT_AMDGPU_TARGETS "gfx803;gfx900;gfx906;gfx908;gfx1030")
-  endif()
-endif()
+rocm_check_target_ids(DEFAULT_AMDGPU_TARGETS
+  TARGETS "gfx803;gfx900:xnack-;gfx906:xnack-;gfx908:xnack-;gfx90a:xnack-;gfx90a:xnack+;gfx1030"
+)
+
 if (AMDGPU_TARGETS)
   if( AMDGPU_TARGETS STREQUAL "all" )
     set( gpus "${DEFAULT_AMDGPU_TARGETS}")
@@ -133,16 +119,19 @@ add_subdirectory(hipcub)
 # Tests
 if(BUILD_TEST)
   enable_testing()
+  rocm_package_setup_client_component(tests)
   add_subdirectory(test)
 endif()
 
 # Examples
 if(BUILD_EXAMPLE)
+  rocm_package_setup_client_component(samples)
   add_subdirectory(examples)
 endif()
 
 # Benchmarks
 if(BUILD_BENCHMARK AND NOT ONLY_INSTALL)
+  rocm_package_setup_client_component(benchmarks)
   add_subdirectory(benchmark)
 endif()
 
